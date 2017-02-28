@@ -1,0 +1,223 @@
+$(document).ready(function(){
+
+	$('ul.letters a').click(function(){
+		
+		var index	= $(this).parent().index();
+		var holder	= $(this).closest('.sub-heading').next();
+
+		holder.find('.scrollable').hide();
+		holder.find('.scrollable:eq(' + index + ')').show();
+		
+		$(this).closest('.letters').find('a').removeClass('active');
+		$(this).addClass('active');
+		$(this).blur();
+		return false;
+	});
+
+	$('.sub-heading').click(function(){
+
+		if (!$(this).is('.opened')){
+
+			$('.slide').hide();
+			$(this).next().show();
+			
+			$('.sub-heading ul').hide();
+			$(this).find('ul').show();
+
+			$('.sub-heading').removeClass('opened');
+			$(this).addClass('opened');
+                        
+		}
+
+		return false;
+	});
+
+	$('.sub-heading').not('.opened').next().hide();
+
+
+	// pagination
+
+	init_pagination();
+
+	// refine your search
+
+	$('.search-box ul li').click(function(){
+		
+		$(this).toggleClass('active');
+		refine_list();
+	});
+	
+	if ($('#product-with-this-herb-cont .featuring-slider').length > 0){
+
+		$('#product-with-this-herb-cont .featuring-slider').cycle({ 
+
+			fx:     'scrollHorz', 
+			speed:  600, 
+			timeout: 0,
+			next:   '#product-w-herb-next', 
+			prev:   '#product-w-herb-prev',
+			prevNextClick: function(a, b, c){ 
+				
+
+				//var n_per_page = 3;	// can we read this from somewhere else? also appears in views/h-slide/inner.php
+				var n_per_page = 1;
+				var n_prods = $('#product-with-this-herb-cont .featuring-slider');
+				var first = b * n_per_page + 1;
+				var last = b * n_per_page + n_per_page;
+				if(last > n_prods) last = n_prods;
+				//$('#product-with-this-herb-cont b.curr:first').html(first+'-'+last);
+				$('#product-with-this-herb-cont b.curr:first').html(first);
+				
+			}
+		});
+	}
+
+	$('.refine-opener').click(function(){
+		
+		$(this).toggleClass('closed');
+		$(this).next().toggle();
+	});
+
+	// alternate product images
+
+	$('li.alt-image a').click(function(){
+		
+		var rel = $(this).attr('rel');
+		$('#active-img img').attr('src', '/uploads/original/' + rel);
+		$('li.alt-image').removeClass('active');
+		$('#product-detail-zoom').attr('href', '/uploads/original/' + $(this).attr('rel'))
+		$(this).closest('li').addClass('active');
+		$(this).blur();
+		return false;
+	});
+
+	$('li.alt-image:first').addClass('active');
+
+	$('#product-detail-zoom').click(function(){
+
+		theImage = new Image();
+		theImage.src = $(this).attr('href');
+
+		// Get accurate measurements from that.
+		imageWidth = theImage.width;
+		imageHeight = theImage.height;
+
+		if (imageHeight >= imageWidth) {
+			renderWidth = '389px';
+			$('#overlay div').css({"width" : "450px"});
+		}
+		else {
+			renderWidth = '100%';
+			$('#overlay div').css({"width" : "650px"});
+		}
+		
+		$('#overlay div').html('<a href="javascript:;" id="overlay-closer">close</a><br /><img width="' + renderWidth + '" src="' + $(this).attr('href') + '" />');
+		$('#overlay').fadeIn(200);
+		$('#overlay-closer').click(function(){
+			
+			$('#overlay').fadeOut(200);
+		});
+		$(this).blur();
+		return false;
+	});
+
+});
+
+function refine_list(){
+	
+	var actives = $('.search-box ul li.active');
+	$('.products-cont li').removeClass('in-set');
+	$('.products-cont li').not('.holder li').hide();
+
+	if (actives.length > 0){
+	
+		$('.search-box ul li.active').each(function(){
+			
+			var rel = $(this).attr('rel');
+			$('.products-cont li span:contains("|' + rel + '|")').closest('li').addClass('in-set');
+		});
+	
+	} else {
+		
+		$('.products-cont > li').addClass('in-set');
+	}
+	
+	$('.products-cont li.in-set').show();
+	init_pagination();
+}
+
+function init_pagination(){
+	
+	$('.pagination').remove();
+	
+	var n_products			= $('.products-cont li.in-set').length;
+	var n_per_page			= n_products > 96 ? 20 : 8;
+	var n_pages				= Math.ceil(n_products / n_per_page);
+	var pagination_html		= '<div class="pagination"></div>';
+	var count_html			= '<span id="n-products" '
+							+ 'style="float: right; font-size: 12px; color: #888; font-weight: bold;">' + n_products + ' Products' + '</p>';
+	var count_html_alt		= '<p id="n-products" '
+							+ 'style="float: right; padding: 9px 3px 3px 6px; color: #888; font-weight: bold;">' + n_products + ' Products' + '</p>';
+
+	if (n_pages > 1){
+		
+		$('.products-list').data('n_per_page', n_per_page);
+		$('.products-list h3:first').after(pagination_html);
+		$('.products-cont').after(pagination_html);
+		$('.products-cont li.in-set:gt(' + (n_per_page-1) + ')').hide();
+		
+		// $('.pagination').append('<span>Page</span>');
+
+		for (i = 0 ; i < n_pages ; i++){
+			// get names of first & last product on each page, set page label accordingly e.g. "Mo-Pa" instead of "8"
+			var first	= $('.products-list').data('n_per_page') * i;
+			var firstname = $('.products-cont li.in-set:eq(' + first + ')').find('div.holder h4 a:last').html();
+			if(i == n_pages - 1) {	// the last page may not be full
+				var lastname = $('.products-cont li.in-set:last div.holder h4 a:last').html();
+			} else {
+				var last	= first + $('.products-list').data('n_per_page') - 1;
+				var lastname = $('.products-cont li.in-set:eq(' + last + ')').find('div.holder h4 a:last').html();
+			}
+			if(firstname == null || lastname == null) {
+				// fall back on numeric page numbers
+				var pagename = i+1;
+			} else {
+				var pagename = firstname.substr(0,2) + "-" + lastname.substr(0,2);
+			}
+			$('.pagination').append('<a rel="' + i + '" href="javascript:;">' + pagename + '</a>');
+		}
+		
+		$('#n-products').remove();
+		$('.products-list h3:first').prepend(count_html);
+		
+		$('.pagination').find('a:first').addClass('active');
+		
+		$('.pagination a').click(function(){
+			
+			var rel		= parseInt($(this).attr('rel'));
+			var first	= $('.products-list').data('n_per_page') * rel;
+			var last	= first + $('.products-list').data('n_per_page') - 1;
+			
+			$('.products-cont li').not('.holder li').hide();
+
+			for (i = first ; i <= last ; i++){
+
+				$('.products-cont li.in-set:eq(' + i + ')').show();
+			}
+
+			$('.pagination a').removeClass('active');
+			$('.pagination').find('a:eq(' + rel + ')').addClass('active');
+			
+			window.location = '#wrapper';
+
+			$(this).blur();
+			return false;
+		});
+	
+	} else {
+		
+		$('#n-products').remove();
+		$('ul.products-cont').prepend(count_html_alt);
+		$('.products-cont li.in-set').show();
+	}
+}

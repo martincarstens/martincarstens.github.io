@@ -1,0 +1,112 @@
+var IE = (navigator.appName.indexOf('Microsoft Internet Explorer') != -1) ? true : false;
+$(document).ready(function() {
+	textChanger.init();
+	clearInputs();
+	//VSA_initScrollbars();
+	initTabs(".tabset");
+	HoverEl("#nav li");
+});
+function HoverEl(h_list) {
+	if(IE) {
+		$(h_list).each(function(id, el) {
+			$(el).hover(
+				function () {
+					$(this).addClass("hover");
+				}, 
+				function () {
+					$(this).removeClass("hover");
+				}
+			);
+		});
+	}
+}
+function clearInputs() {
+	$("input:text, input:password, textarea").each(function() {
+		if(!this.val) this.val = this.value;
+		this.onfocus = function(){
+			if(this.value == this.val) this.value = "";
+		}
+		this.onblur = function(){
+			if(this.value == "") this.value = this.val;
+		}
+	});
+}
+function initTabs(h_list) {
+	$(h_list).each(function(_ind, _el) {
+		var btn_h = $(_el);
+		var _btn = $(_el).find('a.tab');
+		var _a = 0;
+		_btn.each(function(_ind, _el) {
+			this._box = $('#'+_el.href.substr(_el.href.indexOf("#") + 1));
+			if($(_el).hasClass('active')) {
+				this._box.show();
+				_a = _ind;
+			}
+			else {
+				this._box.hide();
+			}
+			_el.onclick = function() {
+				if(!$(this).hasClass('active')){
+					_btn.get(_a)._box.hide();
+					_btn.eq(_a).removeClass('active');
+					this._box.show();
+					$(this).addClass('active');
+					_a = _ind;
+					//VSA_handleResize();
+					$(".scroll-content").scrollTop(0);
+				}
+				return false;
+			}
+		});
+	});
+}
+var textChanger = {
+	defaultFS : 1.2,
+	init: function() {
+		var el = $("body")[0];
+		var sz = textChanger.getCookie();
+		el.style.fontSize = sz ? sz + 'em' : textChanger.defaultFS + 'em';
+		var incr = document.getElementById('increase');
+		if(incr)
+			incr.onclick = function(){textChanger.changeSize(1); return false;};
+		var decr = document.getElementById('decrease');
+		if(decr)
+			decr.onclick = function(){textChanger.changeSize(-1); return false;};
+		var reset = document.getElementById('reset');
+		if(reset)
+			reset.onclick = function(){textChanger.changeSize(0); return false;};
+	},
+	changeSize: function(val) {
+		var el = $("body")[0];
+		var size = el.style.fontSize.substring(0,3);
+		var fSize = parseFloat(size,10);
+		if (val == 1)	{
+			fSize += 0.11;
+			if (fSize > 1.6) fSize = 1.6;
+		} 
+		if (val == -1) {
+			fSize -= 0.11;
+			if (fSize < 0.5) fSize = 0.5;
+		}       
+		if (val == 0) fSize = 1.2;
+		
+		el.style.fontSize = fSize + 'em';
+		textChanger.updateCookie(fSize);
+		//VSA_handleResize();
+	},
+	updateCookie: function(vl)	{
+		var today = new Date();
+		var exp = new Date(today.getTime() + (365*24*60*60*1000));
+		document.cookie = 'textChangerLGaiaHerbs=size=' + vl + ';' +'expires=' + exp.toGMTString() + ';' +'path=/';
+	},
+	getCookie: function() { 
+		var cname = 'textChangerLGaiaHerbs=size=';   
+		var start = document.cookie.indexOf(cname);
+		var len = start + cname.length;
+		if ((!start) && (cname != document.cookie.substring(0,cname.length))) {return null;}
+		if (start == -1) return null;
+		var end = document.cookie.indexOf(";",len);
+		if (end == -1) end = document.cookie.length;
+		return unescape(document.cookie.substring(len, end));
+	}
+}

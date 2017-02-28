@@ -1,0 +1,440 @@
+
+var loader					= '<p align="right"><img src="/_ui/images/ajax-loader.gif" /></p>';
+var trace_input_default		= 'Meet Your Herbs ID';
+var search_default			= 'Search Site';
+
+//cookies
+function setCookie(cname, cvalue, exdays, path) {
+    var d = new Date();
+    d.setTime(d.getTime() + (exdays*24*60*60*1000));
+    var expires = "expires="+ d.toUTCString();
+    document.cookie = cname + "=" + cvalue + "; " + expires + ";" + path;
+}
+
+function getCookie(cname) {
+    var name = cname + "=";
+    var ca = document.cookie.split(';');
+    for(var i=0; i<ca.length; i++) {
+        var c = ca[i];
+        while (c.charAt(0)==' ') c = c.substring(1);
+        if (c.indexOf(name) == 0) return c.substring(name.length,c.length);
+    }
+    return "";
+}
+//
+
+$(document).ready(function(){
+
+	// global
+
+	$("a[href*='http://']:not([href*='gaiaherbs.com'])").attr('target', '_blank');
+
+	$('a.btn-meet-your-herbs').click(function(){
+		
+		var ul = $(this).closest('ul');
+		ul.toggleClass('opened');
+		ul.find('form').toggle();
+		ul.find('input:first').val(trace_input_default);
+		$(this).blur();
+		return false;
+	});
+
+	$('#trace-id').change(function(){
+		
+		if ($(this).val() != '' || $(this).val() != trace_input_default){
+			
+			$(this).closest('form').submit();
+		}
+	});
+	
+	var trace_input	= $('input[name="trace_id"]');
+	trace_input.each(function(){
+		
+		$(this).val($(this).val() == '' ? trace_input_default : $(this).val());
+	});
+	trace_input.focus(function(){
+		
+		if ($(this).val() == trace_input_default){
+
+			$(this).val('');
+		}
+
+		$(this).css('color', '#000000');
+	});
+
+	trace_input.blur(function(){
+		
+		if ($(this).val() == ''){
+
+			$(this).val(trace_input_default);
+		}
+	});
+
+	/*$('#search').focus(function(){
+		
+		if ($(this).val() == search_default){
+
+			$(this).val('');
+		}
+	});
+
+	$('#search').blur(function(){
+		
+		if ($(this).val() == ''){
+
+			$(this).val(search_default);
+		}
+	});*/
+
+	$('#meet-form span').click(function(){
+		
+		$(this).parent().submit();
+	});
+
+	$('form.search input').focus(function(){
+		
+		$(this).css('color', '#000000');
+	});
+
+	// generic image slider
+	
+	if ($('#generic-slider').length){
+
+		$('#generic-slider').cycle({ 
+
+			fx:     'fade', 
+			speed:  1200, 
+			timeout: 0,
+			next:   '#generic-slider-next', 
+			prev:   '#generic-slider-prev'
+		});
+	}
+
+	// horiz slider // use .each() if we end up w/ more than one on a page
+	$('.h-slide-filter a').click(function(){
+		
+		var rel		= $(this).attr('rel');
+		var start	= rel.substr(0, 1);
+		var end		= rel.substr(1, 1);
+		var root	= $(this).closest('.h-slide-filter').attr('rel');
+		var	parent	= $(this).closest('.box-big');
+
+		parent.find('.h-slider').empty();
+		parent.find('.h-slider').html(loader);
+		parent.find('.h-slider').load(root + start + '/' + end + '/', function(){
+			
+			init_h_slide();
+		});
+
+		$(this).closest('.h-slide-filter').find('a').removeClass('active');
+		$(this).addClass('active');
+		$(this).blur();
+		return false;
+	});
+
+	init_h_slide();
+
+	// traceability
+	
+	$('.traced-herb-opener').css('cursor', 'pointer');
+
+	$('.traced-herb-opener').click(function(){
+		
+		if (!$(this).hasClass('for-a-batch') && !$(this).find('.for-a-batch').length){
+
+			$(this).closest('li').next().toggle();
+			$(this).closest('li').toggleClass('opened');
+			var opener = $(this).find('a.traced-herb-opener:last');
+			opener.html(opener.html() == 'Click To View Traceable Info' ? 'Close' : 'click to view traceable info');
+		}
+
+		$(this).blur();
+		return false;
+	});
+
+	// faq
+
+	$('.question').click(function(){
+		
+		$(this).next().toggle();
+	});
+
+	// modal
+
+	init_prettyphoto();
+
+	// youtube video embeds
+
+	var vidWidth 	= 479; // 640
+	var vidHeight 	= 300; // 480
+
+	var youtube_obj = '<object width="' + vidWidth + '" height="' + vidHeight + '">' +
+	     '<param name="movie" value="http://www.youtube.com/v/[vid]&hl=en&fs=1&rel=0">' +
+	     '</param><param name="allowFullScreen" value="true"></param><param ' +
+	     'name="allowscriptaccess" value="always"></param><em' +
+	     'bed src="http://www.youtube.com/v/[vid]&hl=en&fs=1&rel=0" ' +
+	     'type="application/x-shockwave-flash" allowscriptaccess="always" ' +
+	     'allowfullscreen="true" width="' + vidWidth + '" ' + 'height="' +
+	     vidHeight + '"></embed></object>';
+
+	var match_string = 'embed:http://www.youtube.com/watch';
+
+	$('.copy-cont p:contains("' + match_string + '"), .text-holder p:contains("' + match_string + '")').each(function(){
+		
+		var that = $(this);
+		var vid = that.html().match(/(?:v=)([\w\-]+)/g); // end up with v=oHg5SJYRHA0
+		that.html('');
+
+		if (vid.length) {
+
+		 	$.each(vid, function(){
+
+		  		that.append( youtube_obj.replace(/\[vid\]/g, this.replace('v=','')) );
+		 	});
+		}
+	});
+
+});
+
+function init_h_slide(){
+	
+	var n_per_page = 4;
+	var n_peeps = $('#h-slide-cont li').length;
+
+	if ($('#h-slide-cont li.active').length > 0){
+		
+		var starting_slide	= $('#h-slide-cont li.active:first').closest('ul').index();
+		var first_peep		= starting_slide * n_per_page + 1;
+		var last_peep		= starting_slide * n_per_page + n_per_page;
+		if(last_peep > n_peeps) last_peep = n_peeps;
+		$('#h-slide-control b.curr:first').html(first_peep+'-'+last_peep);	
+
+	} else {
+		
+		var starting_slide = 0;
+	}
+
+	$('.h-slider .holder').not('.way-inside').each(function(i){
+		
+		$(this).find('ul').addClass('h-slide-' + i);
+
+		$(this).cycle({ 
+
+			fx:     'scrollHorz', 
+			speed:  1200, 
+			timeout: 0,
+			easeIn:  'easeinout', 
+			easeOut: 'easeinout',
+			startingSlide: starting_slide,
+			next:   $(this).next().find('.h-slide-control-next:first'), 
+			prev:   $(this).next().find('.h-slide-control-prev:first'),
+			prevNextClick: function(a, b, c){ 
+				
+				var n_per_page = 4;	// can we read this from somewhere else? also appears in views/h-slide/inner.php
+				var n_herbs = $('.h-slider li').length;
+				var first_herb = b * n_per_page + 1;
+				var last_herb = b * n_per_page + n_per_page;
+				if(last_herb > n_herbs) last_herb = n_herbs;
+				var classnames = c.className.split(' ');	// e.g. "top-sellers h-slide-0"
+				if(classnames.length == 1) {
+					var classname = classnames[0];
+				} else {
+					// pick one with a number at the end ?
+					for(var i=0; i<classnames.length; i++) {
+						if(!isNaN(classnames[i].substr(classnames[i].length-1))) {
+							classname = classnames[i];
+						}
+					}
+				}
+				$('.' + classname + ':first').closest('.holder').next().find('b.curr:first').html(first_herb+'-'+last_herb);
+			}
+		});
+	});
+}
+
+function init_prettyphoto(){
+
+	if ($("a[rel^='prettyPhoto']").length){
+		
+		$("a[rel^='prettyPhoto']").prettyPhoto({
+
+			theme: 'dark_rounded'
+		});
+	}
+}
+
+
+$( document ).ready(function() {
+	function init_h_slide_recipe(){
+		
+		var n_per_page = 3;
+		var starting_slide = 0;
+
+		$('.h-slider .holder').not('.way-inside').each(function(i){
+			
+			$(this).find('ul').addClass('h-slide-' + i);
+
+			$(this).cycle({ 
+
+				fx:     'scrollHorz', 
+				speed:  1200, 
+				timeout: 0,
+				easeIn:  'easeinout', 
+				easeOut: 'easeinout',
+				startingSlide: starting_slide,
+				next:   $(this).parent().prev().find('.h-slide-control-next:first'), 
+				prev:   $(this).parent().prev().find('.h-slide-control-prev:first'),
+				prevNextClick: function(a, b, c){ 
+					
+					var n_per_page =3;	// can we read this from somewhere else? also appears in views/h-slide/inner.php
+					var n_herbs = $('.h-slider li').length;
+					var first_herb = b * n_per_page + 1;
+					var last_herb = b * n_per_page + n_per_page;
+					if(last_herb > n_herbs) last_herb = n_herbs;
+					var classnames = c.className.split(' ');	// e.g. "top-sellers h-slide-0"
+					if(classnames.length == 1) {
+						var classname = classnames[0];
+					} else {
+						// pick one with a number at the end ?
+						for(var i=0; i<classnames.length; i++) {
+							if(!isNaN(classnames[i].substr(classnames[i].length-1))) {
+								classname = classnames[i];
+							}
+						}
+					}
+					$('.' + classname + ':first').closest('.holder').parent().prev().find('b.curr:first').html(first_herb+'-'+last_herb);
+				}
+			});
+		});
+	}
+
+	$('.email-share-popup').click(function(event) {
+	    var width  = 480,
+	        height = 760,
+	        left   = ($(window).width()  - width)  / 2,
+	        top    = ($(window).height() - height) / 2,
+	        url    = this.href,
+	        opts   = 'status=1' +
+	                 ',width='  + width  +
+	                 ',height=' + height +
+	                 ',top='    + top    +
+	                 ',left='   + left;
+	    
+	    window.open(url, '', opts);
+	 
+	    return false;
+	});	
+
+	if ($('#h-slide-recipes').length) {
+
+		init_h_slide_recipe();
+
+		$('.close-modal').click(function(){
+
+			$('.dim-the-lights').fadeOut();
+			$('.recipe-table').hide();
+			$('.recipe-table-cell').hide();
+			$('#main').css({"overflow" : "hidden"});
+
+		});		
+
+		/*$('.recipe-modal').click(function(event){
+			var open_modal = '#' + ($(this).attr('rel'));
+			$('.dim-the-lights').fadeIn();
+			$('.recipe-table').css({"display" : "table"});
+			$(open_modal).css({"display" : "table-cell"});
+			$('#main').css({"overflow" : "visible"});
+			event.preventDefault();
+		});*/
+
+
+	    $('.direct-link-url').click(function(event){
+	    	$(this).val($(this).attr("rel"));
+	    	$(this).select();
+	    });
+
+	}
+
+	if ($('#recipe-visuals').length) {
+		$('#recipe-visuals').cycle({ 
+
+			timeout: 8000,
+			speed:  500, 
+			next:   '#recipe-visual-next', 
+			prev:   '#recipe-visual-previous',
+			pager:  '#recipe-visuals-pager',
+			after: function(curr, next, opts){
+				
+				var index = opts.currSlide;
+				$('#recipe-visuals-pager-ui a').removeClass('active');
+				$('#recipe-visuals-pager-ui li:eq(' + index + ') a').addClass('active');
+			},
+			prevNextClick: function(a, b, c){ 
+				
+				$('#recipe-visuals-pager-ui a').removeClass('active');
+				$('#recipe-visuals-pager-ui li:eq(' + b + ') a').addClass('active');
+				$('#recipe-visuals').cycle('pause');
+			}
+		});	
+	}
+
+	if ($('.myh2-modal').length) {
+		$('.myh2-modal-close a').click(function(){
+			$('.myh2-modal').fadeOut();
+		});
+
+		$('.myh2-modal').click(function(){			
+			$('.myh2-modal').fadeOut();
+		});
+
+	}
+	if ($('.myh2-close-banner').length) {
+
+		//
+		var cname = "myh2_launch_banner_cookie";
+		//var cname = "EDOYE2016_banner_cookie";
+		var cvalue = "A";		
+		//
+
+		getCookie(cname);
+
+		if (getCookie(cname) != "") {
+			$('.myh2-launch-banner').hide();
+			$('.myh2-launch-space').hide();
+		}
+
+		$('.myh2-close-banner a').click(function(){
+			$('.myh2-launch-banner').fadeOut();
+			$('.myh2-launch-space').fadeOut();
+		    var d = new Date();
+		    d.setTime(d.getTime() + (365*24*60*60*1000));
+		    var expires = "expires="+d.toUTCString();
+		    document.cookie = cname + "=" + cvalue + "; " + expires + "; path=/";
+		});
+
+		$(window).scroll(function() {     
+		    var scroll = $(window).scrollTop();
+		    if (scroll > 0) {
+		        $(".myh2-launch-banner").addClass("myh2-banner-shadow");
+		    }
+		    else {
+		        $(".myh2-launch-banner").removeClass("myh2-banner-shadow");
+		    }
+		});		
+
+	}
+
+	/*if ($('#redesign_survey_promo').length) {
+
+		//
+		var cname = "redesign_survey_promo";
+		var cvalue = "A";		
+		//
+
+		if (getCookie(cname) != 'A') {
+			setCookie(cname, cvalue, 365, 'path=/');
+			$('#redesign_survey_promo').show();
+		}
+	}*/	
+
+});
