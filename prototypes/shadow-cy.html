@@ -1,0 +1,88 @@
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Shadow DOM - Autofill</title>
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, minimum-scale=1.0"
+    />
+    <style>
+      input {
+        font-size: 16px;
+      }
+    </style>
+  </head>
+
+
+  <body>
+    <form>
+      <h1>Native</h1>
+      <input type="email" name="email" placeholder="native email" /> <br />
+      <input autocomplete="password" type="password" name="password" placeholder="native password" /> <br />
+    </form>
+    
+    <form>
+      <h1>Web Component + Shadow DOM</h1>
+      <app-input type="email" name="shadow-email" placeholder="shadow email"></app-input> <br />
+      <app-input type="password" name="shadow-password" placeholder="shadow password"></app-input> <br />
+    </form>
+    
+    <form>
+      <h1>Web Component + Light DOM</h1>
+      <app-input-light type="email" name="light-email" placeholder="light email"></app-input-light>
+      <app-input-light type="password" name="light-password" placeholder="light password"></app-input-light>
+    </form>
+        
+    <script>
+      class AppInput extends HTMLElement {
+        constructor() {
+          super();
+          
+          const root = this.attachShadow({ mode: 'open' });
+          const getType = () => {
+            return this.getAttribute('type');
+          }
+          const getPlaceholder = () => {
+            return this.getAttribute('placeholder');
+          }
+          const getName = () => {
+            return this.getAttribute('name');
+          }
+          root.innerHTML = `
+            <style>
+              input {
+                font-size: 16px;
+              }
+            </style>
+            <input type="${getType()}" name="${getName()}" placeholder="${getPlaceholder()}" />
+          `
+        }
+      }
+      
+      window.customElements.define('app-input', AppInput);
+      
+      class AppInputLight extends HTMLElement {
+        constructor() {
+          super();
+          
+          const getType = () => {
+            return this.getAttribute('type');
+          }
+          const getPlaceholder = () => {
+            return this.getAttribute('placeholder');
+          }
+          const getName = () => {
+            return this.getAttribute('name');
+          }
+          this.innerHTML = `
+            <input type="${getType()}" name="${getName()}" placeholder="${getPlaceholder()}" />
+          `
+        }
+      }
+      
+      window.customElements.define('app-input-light', AppInputLight);
+    </script>
+  </body>
+</html>
